@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 01 — Agent Command Kit | Building AI in Public</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050608;
+      --surface: #0d0f14;
+      --card: #13161e;
+      --border: #1e2230;
+      --accent: #534AB8;
+      --accent2: #FF664C;
+      --accent3: #FF664C;
+      --text: #e8eaf2;
+      --muted: #5c6178;
+      --green: #00ff88;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 600px; height: 600px; background: rgba(83,74,184,0.10); top: -200px; left: -200px; }
+    .orb-2 { width: 500px; height: 500px; background: rgba(255,102,76,0.07); bottom: 20%; right: -150px; }
+    .orb-3 { width: 400px; height: 400px; background: rgba(83,74,184,0.06); top: 40%; left: 30%; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* NAV */
+    nav {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: rgba(5,6,8,0.88);
+      backdrop-filter: blur(20px);
+      z-index: 100;
+    }
+    nav .inner { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; }
+    .logo img { height: 32px; width: auto; }
+    .logo a { display: flex; align-items: center; text-decoration: none; }
+
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .back-link {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); text-decoration: none; letter-spacing: 1.5px;
+      display: flex; align-items: center; gap: 6px;
+      transition: color 0.18s;
+    }
+    .back-link:hover { color: var(--accent); }
+
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--green); letter-spacing: 1.5px;
+      border: 1px solid rgba(0,255,136,0.25);
+      padding: 5px 12px; border-radius: 2px;
+    }
+    .live-pill::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--green); border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* HERO */
+    .hero { padding: 80px 0 60px; }
+    .eyebrow {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); letter-spacing: 3px; text-transform: uppercase;
+      margin-bottom: 28px; display: flex; align-items: center; gap: 12px;
+    }
+    .eyebrow::before { content: ''; display: block; width: 36px; height: 1px; background: var(--accent); }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(40px, 7vw, 72px);
+      font-weight: 800; line-height: 0.95; letter-spacing: -2px;
+      margin-bottom: 28px;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+
+    .hero-desc {
+      font-size: 18px; color: var(--muted); max-width: 600px;
+      line-height: 1.65; font-weight: 300; margin-bottom: 0;
+    }
+    .hero-desc strong { color: var(--text); font-weight: 500; }
+
+    /* SECTIONS */
+    .sec { margin-bottom: 80px; }
+    .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 36px; }
+    .sec-n {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); border: 1px solid rgba(83,74,184,0.4);
+      padding: 2px 8px;
+    }
+    .sec-t { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.8px; }
+
+    /* FEATURE CARDS */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+      margin-bottom: 80px;
+    }
+    .feature {
+      background: var(--card); padding: 32px;
+      transition: background 0.18s;
+    }
+    .feature:hover { background: #1a1d28; }
+    .feature-icon { font-size: 28px; margin-bottom: 16px; }
+    .feature-name { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* WHY IT WORKS */
+    .why-block {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 44px; margin-bottom: 80px;
+    }
+    .why-block h3 {
+      font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700;
+      letter-spacing: -0.5px; margin-bottom: 12px;
+    }
+    .why-intro {
+      font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 28px;
+      max-width: 700px;
+    }
+    .why-list { display: flex; flex-direction: column; gap: 12px; }
+    .why-item {
+      font-size: 14px; line-height: 1.55; color: var(--text);
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .why-item .tick {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); flex-shrink: 0; margin-top: 2px;
+    }
+
+    /* STEPS */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+      margin-bottom: 80px;
+    }
+    .step {
+      background: var(--card); padding: 32px;
+      transition: background 0.18s;
+    }
+    .step:hover { background: #1a1d28; }
+    .step-num {
+      font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800;
+      color: var(--border); margin-bottom: 14px; line-height: 1;
+    }
+    .step-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .step-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+
+    /* PROMPT BLOCKS */
+    .prompt-section { margin-bottom: 60px; }
+    .prompt-header {
+      background: var(--surface); border: 1px solid var(--border);
+      border-bottom: none;
+      padding: 36px 36px 28px;
+    }
+    .prompt-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .prompt-title {
+      font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700;
+      letter-spacing: -0.5px; margin-bottom: 10px;
+    }
+    .prompt-subtitle {
+      font-size: 14px; color: var(--muted); line-height: 1.6; max-width: 680px;
+    }
+
+    .prompt-what {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: none; border-bottom: none;
+      padding: 0 36px 28px;
+    }
+    .prompt-what h4 {
+      font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .prompt-what-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .prompt-what-item {
+      font-size: 13px; color: var(--muted); line-height: 1.5;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .prompt-what-item .tick {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); flex-shrink: 0; margin-top: 1px;
+    }
+
+    /* VARIABLES TABLE */
+    .var-table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: none; border-bottom: none;
+      padding: 0 36px 28px;
+    }
+    .var-table-wrap h4 {
+      font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .var-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .var-table th {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase;
+      text-align: left; padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .var-table td {
+      font-size: 13px; padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .var-table td:first-child {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      color: var(--accent);
+    }
+    .var-table td:last-child { color: var(--muted); }
+
+    .prompt-tip {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: none; border-bottom: none;
+      padding: 0 36px 28px;
+    }
+    .tip-box {
+      background: rgba(83,74,184,0.08); border: 1px solid rgba(83,74,184,0.25);
+      padding: 16px 20px; font-size: 13px; color: var(--muted); line-height: 1.55;
+    }
+    .tip-box strong { color: var(--accent); font-weight: 700; }
+
+    /* CODE BLOCK */
+    .prompt-code-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: none;
+      padding: 0 36px 36px;
+    }
+    .prompt-code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .prompt-code-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); letter-spacing: 1.5px;
+    }
+    .copy-btn {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--accent); background: rgba(83,74,184,0.12);
+      border: 1px solid rgba(83,74,184,0.35);
+      padding: 5px 12px; cursor: pointer;
+      letter-spacing: 1px; transition: all 0.18s;
+    }
+    .copy-btn:hover { background: rgba(83,74,184,0.25); color: var(--text); }
+    .copy-btn.copied { color: var(--green); border-color: rgba(0,255,136,0.35); background: rgba(0,255,136,0.08); }
+
+    .prompt-code {
+      background: #0a0b10; border: 1px solid var(--border);
+      padding: 24px; font-family: 'Space Mono', monospace;
+      font-size: 12px; line-height: 1.7; color: var(--muted);
+      overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+      max-height: 420px; overflow-y: auto;
+    }
+    .prompt-code::-webkit-scrollbar { width: 6px; }
+    .prompt-code::-webkit-scrollbar-track { background: transparent; }
+    .prompt-code::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .prompt-code .var { color: var(--accent); }
+    .prompt-code .comment { color: #3a3d4a; }
+
+    /* MODULE CARDS */
+    .modules-grid {
+      display: flex; flex-direction: column;
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+    }
+    .module-card {
+      background: var(--card); padding: 28px 32px;
+      transition: background 0.18s;
+    }
+    .module-card:hover { background: #1a1d28; }
+    .module-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 20px; margin-bottom: 16px;
+    }
+    .module-icon { font-size: 20px; margin-right: 10px; }
+    .module-name {
+      font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+    }
+    .module-desc {
+      font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 16px;
+    }
+    .module-prompt-wrap {
+      display: none;
+      margin-top: 16px;
+    }
+    .module-prompt-wrap.open { display: block; }
+    .module-prompt {
+      background: #0a0b10; border: 1px solid var(--border);
+      padding: 20px; font-family: 'Space Mono', monospace;
+      font-size: 11px; line-height: 1.7; color: var(--muted);
+      white-space: pre-wrap; word-break: break-word;
+      max-height: 300px; overflow-y: auto;
+    }
+    .module-prompt::-webkit-scrollbar { width: 6px; }
+    .module-prompt::-webkit-scrollbar-track { background: transparent; }
+    .module-prompt::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .module-actions {
+      display: flex; gap: 8px;
+    }
+    .module-toggle {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); background: transparent;
+      border: 1px solid var(--border);
+      padding: 5px 12px; cursor: pointer;
+      letter-spacing: 1px; transition: all 0.18s;
+    }
+    .module-toggle:hover { color: var(--text); border-color: var(--accent); }
+
+    /* BONUS / ENGINE SECTION */
+    .bonus-block {
+      background: rgba(83,74,184,0.05);
+      border: 1px dashed rgba(83,74,184,0.35);
+      padding: 28px 32px; margin-top: 24px;
+    }
+    .bonus-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--accent); letter-spacing: 2px; margin-bottom: 10px;
+    }
+    .bonus-title {
+      font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .bonus-desc {
+      font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 16px;
+    }
+
+    /* CTA */
+    .cta-block {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 52px; margin-bottom: 80px;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 40px; align-items: center;
+    }
+    .cta-t { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.8px; margin-bottom: 7px; }
+    .cta-s { font-size: 14px; color: var(--muted); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #FF664C; color: white;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+      padding: 14px 28px; text-decoration: none; white-space: nowrap;
+      transition: all 0.18s; letter-spacing: 0.5px;
+    }
+    .btn:hover { background: #e0573f; transform: translateY(-1px); }
+
+    /* FINAL */
+    .final-block {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 52px; margin-bottom: 80px; text-align: center;
+    }
+    .final-block .eyebrow { justify-content: center; }
+    .final-block h2 {
+      font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800; letter-spacing: -1.5px; margin-bottom: 14px;
+    }
+    .final-block h2 em { font-style: normal; color: var(--accent); }
+    .final-block p {
+      font-size: 15px; color: var(--muted); line-height: 1.65;
+      max-width: 560px; margin: 0 auto 32px;
+    }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 28px 0; }
+    footer .fi { display: flex; justify-content: space-between; align-items: center; }
+    .f-copy { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
+    .f-links { display: flex; gap: 24px; }
+    .f-links a { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-decoration: none; }
+    .f-links a:hover { color: var(--accent); }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.55s ease, transform 0.55s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+
+    @media (max-width: 768px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .cta-block { grid-template-columns: 1fr; }
+      .prompt-header, .prompt-what, .var-table-wrap, .prompt-tip, .prompt-code-wrap { padding-left: 24px; padding-right: 24px; }
+      .why-block { padding: 28px 24px; }
+      .final-block { padding: 36px 24px; }
+      .module-top { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <nav>
+    <div class="container inner">
+      <div class="logo"><a href="index.html"><img src="../../logo.png" alt="build.public"></a></div>
+      <div class="nav-right">
+        <a href="index.html" class="back-link">&larr; ALL DAYS</a>
+        <div class="live-pill">DAY 01</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="eyebrow">Day 01 of 30 — The Challenge Begins</div>
+      <h1>Agent<br><em>Command Kit</em></h1>
+      <p class="hero-desc">
+        Mission Control is a <strong>single-file HTML dashboard</strong> that serves as your personal command center — tracking goals, projects, revenue, AI agents, and more. All in one place on your desktop.
+      </p>
+    </div>
+  </section>
+
+  <!-- FEATURE CARDS -->
+  <div class="container">
+    <div class="features-grid reveal">
+      <div class="feature">
+        <div class="feature-icon">&#x1F4C4;</div>
+        <div class="feature-name">Single HTML File</div>
+        <div class="feature-desc">No frameworks, no deploys, no dependencies. Just one file you open in your browser.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">&#x1F916;</div>
+        <div class="feature-name">AI-Built</div>
+        <div class="feature-desc">Copy a prompt, paste it into Claude or ChatGPT, and get a complete working dashboard in seconds.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">&#x1F3A8;</div>
+        <div class="feature-name">Fully Yours</div>
+        <div class="feature-desc">Every pixel is customizable. Change colors, add sections, make it match your workflow perfectly.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHY IT WORKS -->
+  <div class="container">
+    <div class="why-block reveal">
+      <h3>Why It Works</h3>
+      <p class="why-intro">Most dashboards require accounts, subscriptions, and fighting with someone else's idea of what you need. Mission Control flips that — it's a single HTML file:</p>
+      <div class="why-list">
+        <div class="why-item"><span class="tick">&#x2726;</span> Opens instantly, works offline, zero loading screens</div>
+        <div class="why-item"><span class="tick">&#x2726;</span> Your data stays in your browser (localStorage) — no cloud, no accounts</div>
+        <div class="why-item"><span class="tick">&#x2726;</span> AI builds it to YOUR spec — not a template you have to hack around</div>
+        <div class="why-item"><span class="tick">&#x2726;</span> Version control it, back it up, share it — it's just a file</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW TO USE -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">01</span>
+        <h2 class="sec-t">How to Use This Guide</h2>
+      </div>
+      <p style="font-size:14px; color:var(--muted); margin-bottom:28px; line-height:1.6;">This guide contains <strong style="color:var(--text)">3 prompts</strong> that build progressively. Each one is a complete, copy-paste-ready prompt designed to produce production-quality code.</p>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-name">Copy the Prompt</div>
+          <div class="step-desc">Click the copy button on any prompt block to copy it to your clipboard.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-name">Fill in [Brackets]</div>
+          <div class="step-desc">Replace variables like [YOUR_NAME] with your actual info.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-name">Paste &amp; Build</div>
+          <div class="step-desc">Send to Claude or ChatGPT. Save the output as an HTML file. Done.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMPT 01 -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">02</span>
+        <h2 class="sec-t">Prompt 01 — The Foundation</h2>
+      </div>
+
+      <div class="prompt-section" id="prompt-01">
+        <div class="prompt-header">
+          <div class="prompt-label">PROMPT 01</div>
+          <div class="prompt-title">The Foundation</div>
+          <div class="prompt-subtitle">This mega-prompt builds your complete Mission Control dashboard from scratch — a premium dark-theme command center with live data, smooth animations, and persistent storage. One prompt, one file, zero dependencies.</div>
+        </div>
+
+        <div class="prompt-what">
+          <h4>What You'll Get</h4>
+          <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">A 2000+ line, production-quality HTML file containing:</p>
+          <div class="prompt-what-list">
+            <div class="prompt-what-item"><span class="tick">&#x2726;</span> Dark glassmorphism theme with frosted-glass cards and subtle glow effects</div>
+            <div class="prompt-what-item"><span class="tick">&#x2726;</span> Sticky header with navigation tabs, live clock, and status indicator</div>
+            <div class="prompt-what-item"><span class="tick">&#x2726;</span> Dashboard tab — Welcome greeting, 4 metric cards, activity feed, priorities</div>
+            <div class="prompt-what-item"><span class="tick">&#x2726;</span> Projects tab — Full Kanban board (Backlog &rarr; In Progress &rarr; Done)</div>
+            <div class="prompt-what-item"><span class="tick">&#x2726;</span> Timeline tab — Phase-based roadmap with milestones</div>
+            <div class="prompt-what-item"><span class="tick">&#x2726;</span> Notes tab — Quick capture with auto-save</div>
+            <div class="prompt-what-item"><span class="tick">&#x2726;</span> All data persisted to localStorage — nothing lost on refresh</div>
+            <div class="prompt-what-item"><span class="tick">&#x2726;</span> Keyboard shortcut (Cmd+K) for search, responsive design, smooth animations</div>
+          </div>
+        </div>
+
+        <div class="var-table-wrap">
+          <h4>Variables to Fill In</h4>
+          <table class="var-table">
+            <thead><tr><th>Variable</th><th>What to Enter</th></tr></thead>
+            <tbody>
+              <tr><td>[YOUR_NAME]</td><td>Your first name (used in the welcome greeting)</td></tr>
+              <tr><td>[YOUR_BUSINESS]</td><td>Your company or project name</td></tr>
+              <tr><td>[YOUR_ROLE]</td><td>Your title — CEO, Creator, Developer, etc.</td></tr>
+              <tr><td>[MAIN_GOAL]</td><td>Your primary goal (e.g., "Hit $10K MRR")</td></tr>
+              <tr><td>[GOAL_DEADLINE]</td><td>Target date (e.g., "December 2025")</td></tr>
+              <tr><td>[GOAL_METRIC]</td><td>The key number you're tracking</td></tr>
+              <tr><td>[COLOR_ACCENT]</td><td>Hex color for accents (e.g., #6C63FF, #00D4AA)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="prompt-tip">
+          <div class="tip-box">
+            <strong>Tip:</strong> Use Claude (Sonnet or Opus) for best results. The prompt is optimized for long-form code generation. If using ChatGPT, use GPT-4 with a "write the complete file" follow-up if it truncates.
+          </div>
+        </div>
+
+        <div class="prompt-code-wrap">
+          <div class="prompt-code-header">
+            <span class="prompt-code-label">THE FOUNDATION PROMPT</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p1')">COPY PROMPT</button>
+          </div>
+          <pre class="prompt-code" id="p1">I want you to build me a Mission Control dashboard as a single HTML file. This is my personal command center for tracking my life and business.
+
+About Me:
+- Name: <span class="var">[YOUR_NAME]</span>
+- Business/Role: <span class="var">[YOUR_BUSINESS]</span> — <span class="var">[YOUR_ROLE]</span>
+- Main Goal: <span class="var">[MAIN_GOAL]</span> by <span class="var">[GOAL_DEADLINE]</span>
+- Key Metric: <span class="var">[GOAL_METRIC]</span>
+
+Technical Requirements:
+- Single self-contained HTML file (inline CSS + JS, no external dependencies except Google Fonts Inter)
+- Dark theme with glassmorphism: primary bg #050508, cards with backdrop-filter blur, subtle borders rgba(255,255,255,0.06)
+- Accent color: <span class="var">[COLOR_ACCENT]</span> (use for highlights, active states, glows)
+- Font: Inter from Google Fonts
+- Fully responsive, smooth animations (fadeInUp on cards, pulse on status dot)
+- All data saved to localStorage so nothing is lost on refresh
+
+Layout:
+- Sticky frosted-glass header: logo/title left, tab navigation center, search bar + live status dot right
+- Tabs: &#x1F4CA; Dashboard, &#x1F4CB; Projects, &#x1F4C5; Timeline, &#x1F4DD; Notes
+- Main content max-width 1600px, centered, 2.5rem padding
+
+Dashboard Tab:
+- Welcome bar: "Good [morning/afternoon/evening], [NAME]" with live date/time
+- 4 metric cards in a grid: each with colored top accent bar (3px), icon, label, value, and trend indicator
+  Cards: <span class="var">[GOAL_METRIC]</span> progress, Active Projects count, Tasks Today count, Days to Goal countdown
+- Activity feed: scrollable list of recent items with timestamps (stored in localStorage)
+- Top Priorities section: editable list with checkboxes, add new priority button
+
+Projects Tab:
+- Kanban board with 3 columns: Backlog, In Progress, Done
+- Task cards: title, description preview, priority badge (high/medium/low with colors), created date
+- Add task button per column, click card to edit, delete option
+- All tasks persisted to localStorage
+
+Timeline Tab:
+- Visual roadmap with phases displayed vertically
+- Each phase: title, date range, description, list of milestones with completion checkmarks
+- Current phase highlighted with accent glow
+- Data defined in a JS config object (easy to edit)
+
+Notes Tab:
+- Large textarea with markdown-style formatting
+- Auto-saves to localStorage on every keystroke
+- Character count, last saved timestamp
+- Clean minimal design
+
+Code Quality:
+- Clean, well-organized code with comments for each section
+- CSS variables for all colors/spacing (easy to re-theme)
+- Smooth transitions on all interactive elements
+- Keyboard shortcut: Cmd/Ctrl+K to focus search
+
+Build the complete file. Make it production quality — this should look like a premium SaaS dashboard, not a hobby project.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMPT 02 -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">03</span>
+        <h2 class="sec-t">Prompt 02 — The Modules</h2>
+      </div>
+
+      <p style="font-size:14px; color:var(--muted); margin-bottom:12px; line-height:1.6;">Now that you have the foundation, add power modules. Each prompt adds a new tab to your existing dashboard.</p>
+      <div class="tip-box" style="margin-bottom:28px;">
+        <strong>How to use:</strong> Open a new conversation with your AI. Paste your existing mission-control.html file first, then paste the module prompt below it. The AI will return an updated file with the new tab integrated.
+      </div>
+
+      <div class="modules-grid">
+        <!-- Module A -->
+        <div class="module-card">
+          <div class="module-top">
+            <div><span class="module-icon">&#x1F4B0;</span><span class="module-name">Module A: Revenue Tracker</span></div>
+            <div class="module-actions">
+              <button class="copy-btn" onclick="copyPrompt(this, 'mod-a')">COPY</button>
+              <button class="module-toggle" onclick="toggleModule(this)">SHOW PROMPT</button>
+            </div>
+          </div>
+          <div class="module-desc">Track MRR, manage clients, visualize growth, and project annual revenue.</div>
+          <div class="module-prompt-wrap">
+            <pre class="module-prompt" id="mod-a">Add a &#x1F4B0; Revenue tab to my Mission Control. Include:
+- Monthly revenue goal with visual gauge (circular or bar)
+- Revenue chart showing last 6 months (simple bar chart, CSS-only or canvas)
+- Client list with: name, monthly value, status (active/pending/churned), start date
+- Add/edit/remove clients, auto-calculate MRR
+- Revenue projections section: if current MRR continues, show projected annual + monthly growth needed to hit goal
+- All data in localStorage
+- Match the existing dark glassmorphism theme and animation style</pre>
+          </div>
+        </div>
+
+        <!-- Module B -->
+        <div class="module-card">
+          <div class="module-top">
+            <div><span class="module-icon">&#x1F3E2;</span><span class="module-name">Module B: AI Agent Command Center</span></div>
+            <div class="module-actions">
+              <button class="copy-btn" onclick="copyPrompt(this, 'mod-b')">COPY</button>
+              <button class="module-toggle" onclick="toggleModule(this)">SHOW PROMPT</button>
+            </div>
+          </div>
+          <div class="module-desc">Manage your AI agents, track their activity, send tasks, and log executive decisions.</div>
+          <div class="module-prompt-wrap">
+            <pre class="module-prompt" id="mod-b">Add a &#x1F3E2; Command Center tab to my Mission Control for managing my AI agents/team. Include:
+- Agent cards in a grid: each shows name, role/title, status (online/busy/offline with colored dots), model being used, last active timestamp
+- Click agent card to open a slide-out detail panel with: full description, capabilities list, recent activity log, performance notes
+- "Send Task" button that opens a modal with a text area (simulates sending tasks — saves to agent's activity log)
+- Executive Decisions section below agents: list of key decisions made with date, question asked, decision summary, which agents were consulted
+- Store all agent data in localStorage, include 3-4 sample agents to start</pre>
+          </div>
+        </div>
+
+        <!-- Module C -->
+        <div class="module-card">
+          <div class="module-top">
+            <div><span class="module-icon">&#x1F3AC;</span><span class="module-name">Module C: YouTube Studio</span></div>
+            <div class="module-actions">
+              <button class="copy-btn" onclick="copyPrompt(this, 'mod-c')">COPY</button>
+              <button class="module-toggle" onclick="toggleModule(this)">SHOW PROMPT</button>
+            </div>
+          </div>
+          <div class="module-desc">Plan video content, track growth milestones, and manage a content calendar.</div>
+          <div class="module-prompt-wrap">
+            <pre class="module-prompt" id="mod-c">Add a &#x1F3AC; YouTube tab to my Mission Control for planning video content. Include:
+- Video ideas pipeline: cards with title, topic, status (idea/scripting/filming/editing/published), target publish date
+- Add/edit ideas, move between statuses
+- YouTube growth tracker: current sub count (editable), milestone levels with fun titles (e.g., "Rising Creator" at 1K, "Growth Engine" at 10K), XP-style progress bar to next milestone
+- Content calendar: simple month grid showing planned publish dates
+- All data in localStorage, match existing theme</pre>
+          </div>
+        </div>
+
+        <!-- Module D -->
+        <div class="module-card">
+          <div class="module-top">
+            <div><span class="module-icon">&#x1F4DE;</span><span class="module-name">Module D: Meeting Prep</span></div>
+            <div class="module-actions">
+              <button class="copy-btn" onclick="copyPrompt(this, 'mod-d')">COPY</button>
+              <button class="module-toggle" onclick="toggleModule(this)">SHOW PROMPT</button>
+            </div>
+          </div>
+          <div class="module-desc">Never walk into a meeting unprepared. Track agendas, notes, and action items.</div>
+          <div class="module-prompt-wrap">
+            <pre class="module-prompt" id="mod-d">Add a &#x1F4DE; Meetings tab to my Mission Control. Include:
+- Upcoming meetings list: title, date/time, attendee(s), type (call/zoom/in-person), prep notes
+- Add/edit/delete meetings
+- Each meeting card expands to show: agenda items (editable checklist), notes textarea, action items that come out of it
+- Past meetings archive (auto-moves when date passes)
+- Today's meetings highlighted at top with countdown timers
+- localStorage persistence, match theme</pre>
+          </div>
+        </div>
+
+        <!-- Module E -->
+        <div class="module-card">
+          <div class="module-top">
+            <div><span class="module-icon">&#x1F4E1;</span><span class="module-name">Module E: Daily Intel Feed</span></div>
+            <div class="module-actions">
+              <button class="copy-btn" onclick="copyPrompt(this, 'mod-e')">COPY</button>
+              <button class="module-toggle" onclick="toggleModule(this)">SHOW PROMPT</button>
+            </div>
+          </div>
+          <div class="module-desc">Curate your own intel feed — AI news, trends, competitor moves, and opportunities.</div>
+          <div class="module-prompt-wrap">
+            <pre class="module-prompt" id="mod-e">Add a &#x1F4E1; Intel tab to my Mission Control. Include:
+- Sections for different intel categories: AI News, Industry Trends, Competitor Watch, Opportunities
+- Each item: title, summary, source link, date added, importance tag (&#x1F525; hot / &#x26A1; notable / &#x1F4CC; reference)
+- Add new intel items with a simple form
+- Filter by category and importance
+- "Daily Brief" section at top: 3-5 most important items auto-sorted by date
+- localStorage persistence, match theme</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMPT 03 -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">04</span>
+        <h2 class="sec-t">Prompt 03 — The Engine</h2>
+      </div>
+
+      <p style="font-size:14px; color:var(--muted); margin-bottom:28px; line-height:1.6;">Make Mission Control a living dashboard. This prompt builds a lightweight Node.js server for live data, weather, and backup.</p>
+
+      <div class="prompt-section" id="prompt-03">
+        <div class="prompt-header" style="border-bottom:none;">
+          <div class="prompt-label">PROMPT 03</div>
+          <div class="prompt-title">The Engine</div>
+          <div class="prompt-subtitle">A lightweight local server to power your dashboard with live data, weather, and automatic backup.</div>
+        </div>
+
+        <div class="prompt-code-wrap" style="border-top:none;">
+          <div class="prompt-code-header">
+            <span class="prompt-code-label">THE ENGINE PROMPT</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p3')">COPY PROMPT</button>
+          </div>
+          <pre class="prompt-code" id="p3">I need a lightweight local server to power my Mission Control dashboard with live data. Build me a complete Node.js server with these specs:
+
+Setup:
+- Single file: server.js (or server.mjs)
+- Port: 8899
+- Serve my mission-control.html file at the root
+- CORS enabled for local development
+- No heavy frameworks — just built-in Node http/https modules (or Express if cleaner)
+
+API Endpoints:
+Create RESTful endpoints that Mission Control can fetch from:
+
+1. GET /mc/status — Returns system status:
+   - Server uptime, last data refresh timestamp, connection health: "online"
+
+2. GET /mc/data — Returns dashboard data:
+   - Read from a local JSON file (mc-data.json) that stores all dashboard state
+
+3. POST /mc/data — Save dashboard data:
+   - Accepts JSON body, writes to mc-data.json
+   - Lets Mission Control sync its localStorage to the server as backup
+
+4. GET /mc/weather?city=<span class="var">[CITY]</span> — Fetch current weather:
+   - Use wttr.in API (free, no key): https://wttr.in/<span class="var">[CITY]</span>?format=j1
+   - Return: temperature, condition, feels_like
+
+5. GET /mc/activity — Returns recent activity log:
+   - Read from mc-activity.json, returns last 50 entries
+
+6. POST /mc/activity — Add activity entry:
+   - Appends to mc-activity.json with timestamp
+
+Auto-start (macOS):
+Also generate a LaunchAgent plist file that auto-starts this server on login:
+- File: ~/Library/LaunchAgents/com.missioncontrol.server.plist
+- Points to the server.js file
+- Runs on load, restarts if crashed
+- Include the terminal commands to install it
+
+Setup instructions:
+Print clear step-by-step setup instructions:
+1. Save server.js to a folder
+2. Run `node server.js`
+3. Open http://localhost:8899
+4. (Optional) Install the LaunchAgent for auto-start
+
+Keep it simple. No database, no auth, no complexity. Just a clean local server that makes Mission Control come alive.</pre>
+        </div>
+      </div>
+
+      <!-- BONUS -->
+      <div class="bonus-block">
+        <div class="bonus-label">PROMPT 03 — BONUS</div>
+        <div class="bonus-title">Connecting Your Dashboard to the Server</div>
+        <div class="bonus-desc">Once your server is running, use this mini-prompt to wire up your dashboard.</div>
+        <div class="prompt-code-header" style="margin-bottom:12px;">
+          <span class="prompt-code-label">CONNECTION PROMPT</span>
+          <button class="copy-btn" onclick="copyPrompt(this, 'p3-bonus')">COPY PROMPT</button>
+        </div>
+        <pre class="module-prompt" id="p3-bonus">Update my mission-control.html to connect to the local server at http://localhost:8899. Add:
+
+1. On page load, fetch GET /mc/data and merge with localStorage (server = backup, localStorage = primary)
+2. Every 5 minutes, POST current localStorage state to /mc/data as backup
+3. Fetch weather from GET /mc/weather?city=<span class="var">[YOUR_CITY]</span> and display temp + condition in the header next to the status dot
+4. When any data changes, POST to /mc/activity with a description of what changed
+5. Update the status dot: green = server connected, red = offline (fallback to localStorage-only mode)
+6. Add a small "Server: Online/Offline" indicator in the header
+
+Keep all existing localStorage functionality as the primary data layer. The server is a backup + data enrichment layer, not a replacement.</pre>
+      </div>
+
+      <div class="tip-box" style="margin-top:24px;">
+        <strong>Pro tip:</strong> You don't need The Engine to use Mission Control. The HTML file works perfectly standalone. The server just adds superpowers — live weather, backup, and a clean localhost URL.
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL -->
+  <div class="container">
+    <div class="final-block reveal">
+      <div class="eyebrow">You're Ready</div>
+      <h2>Now <em>Make It Yours</em></h2>
+      <p>These prompts are starting points. The best agent setup is the one built around your life, your goals, your workflow. Customize relentlessly.</p>
+      <p style="font-size:13px; color:var(--muted); max-width:480px; margin:0 auto 36px;">Change the colors. Add new tabs. Rip out what you don't need. Ask the AI to rebuild sections. This is your command center.</p>
+      <a href="https://www.youtube.com/@eraofaiclub1" class="btn" target="_blank">&#x25B6; Watch the Full Build on YouTube</a>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="container">
+    <div class="cta-block reveal">
+      <div>
+        <div class="cta-t">New build drops every 24 hours.</div>
+        <div class="cta-s">Subscribe and watch the challenge unfold. Real builds. Real results. Every day.</div>
+      </div>
+      <a href="https://www.youtube.com/@eraofaiclub1" class="btn" target="_blank">&#x25B6; Subscribe on YouTube</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <footer>
+      <div class="fi">
+        <div class="f-copy">build.public — Day 01 of 30 — March 2026</div>
+        <div class="f-links">
+          <a href="https://www.youtube.com/@eraofaiclub1" target="_blank">YouTube</a>
+          <a href="#">Twitter / X</a>
+          <a href="#">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Copy prompt to clipboard
+    function copyPrompt(btn, id) {
+      const el = document.getElementById(id);
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'COPIED!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = btn.dataset.original || 'COPY PROMPT';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+      if (!btn.dataset.original) {
+        btn.dataset.original = btn.textContent;
+      }
+    }
+
+    // Toggle module prompt visibility
+    function toggleModule(btn) {
+      const wrap = btn.closest('.module-card').querySelector('.module-prompt-wrap');
+      wrap.classList.toggle('open');
+      btn.textContent = wrap.classList.contains('open') ? 'HIDE PROMPT' : 'SHOW PROMPT';
+    }
+
+    // Scroll reveal
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) setTimeout(() => e.target.classList.add('in'), i * 60);
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  </script>
+</body>
+</html>

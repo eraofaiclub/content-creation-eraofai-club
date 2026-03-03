@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>0 → 10K in 30 Days | Building AI in Public</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050608;
+      --surface: #0d0f14;
+      --card: #13161e;
+      --border: #1e2230;
+      --accent: #534AB8;
+      --accent2: #FF664C;
+      --accent3: #FF664C;
+      --text: #e8eaf2;
+      --muted: #5c6178;
+      --green: #00ff88;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 600px; height: 600px; background: rgba(83,74,184,0.10); top: -200px; left: -200px; }
+    .orb-2 { width: 500px; height: 500px; background: rgba(255,102,76,0.07); bottom: 20%; right: -150px; }
+    .orb-3 { width: 400px; height: 400px; background: rgba(83,74,184,0.06); top: 40%; left: 30%; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* NAV */
+    nav {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: rgba(5,6,8,0.88);
+      backdrop-filter: blur(20px);
+      z-index: 100;
+    }
+    nav .inner { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; }
+    .logo img { height: 32px; width: auto; }
+
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--green); letter-spacing: 1.5px;
+      border: 1px solid rgba(0,255,136,0.25);
+      padding: 5px 12px; border-radius: 2px;
+    }
+    .live-pill::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--green); border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* HERO */
+    .hero { padding: 100px 0 80px; }
+
+    .eyebrow {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); letter-spacing: 3px; text-transform: uppercase;
+      margin-bottom: 28px; display: flex; align-items: center; gap: 12px;
+    }
+    .eyebrow::before { content: ''; display: block; width: 36px; height: 1px; background: var(--accent); }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(56px, 9vw, 104px);
+      font-weight: 800; line-height: 0.92; letter-spacing: -3px;
+      margin-bottom: 36px;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+    h1 .dim { color: var(--muted); }
+
+    .hero-desc {
+      font-size: 18px; color: var(--muted); max-width: 520px;
+      line-height: 1.65; font-weight: 300; margin-bottom: 52px;
+    }
+    .hero-desc strong { color: var(--text); font-weight: 500; }
+
+    /* STATS */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border); margin-bottom: 80px;
+    }
+    .stat {
+      background: var(--surface); padding: 24px 28px;
+    }
+    .stat-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .stat-val {
+      font-family: 'Syne', sans-serif; font-size: 38px;
+      font-weight: 800; line-height: 1;
+    }
+    .stat-val.o { color: var(--accent); }
+    .stat-val.g { color: var(--green); }
+    .stat-val.b { color: #FF664C; }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 5px; font-family: 'Space Mono', monospace; }
+
+    /* TICKER */
+    .ticker-wrap {
+      overflow: hidden; border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border); padding: 10px 0;
+      margin-bottom: 80px; background: var(--surface);
+    }
+    .ticker { display: flex; gap: 48px; animation: tick 28s linear infinite; white-space: nowrap; }
+    .tick-item {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .tick-item::before { content: '◆'; color: var(--accent); font-size: 7px; }
+    @keyframes tick { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+    /* SECTIONS */
+    .sec { margin-bottom: 80px; }
+    .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 36px; }
+    .sec-n {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); border: 1px solid rgba(83,74,184,0.4);
+      padding: 2px 8px;
+    }
+    .sec-t { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.8px; }
+
+    /* STATEMENT */
+    .statement {
+      border: 1px solid var(--border); padding: 52px;
+      background: var(--surface); position: relative; margin-bottom: 80px;
+    }
+    .statement::before {
+      content: '"'; position: absolute; top: -16px; left: 36px;
+      font-family: 'Syne', sans-serif; font-size: 110px;
+      color: var(--accent); line-height: 1; opacity: 0.2;
+    }
+    .statement-body {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(20px, 2.8vw, 30px);
+      font-weight: 700; line-height: 1.4; letter-spacing: -0.5px;
+      max-width: 780px;
+    }
+    .statement-body em { font-style: normal; color: var(--accent); }
+    .statement-attr {
+      margin-top: 24px; font-family: 'Space Mono', monospace;
+      font-size: 11px; color: var(--muted);
+    }
+
+    /* PROGRESS */
+    .prog-wrap {
+      background: var(--surface); border: 1px solid var(--border); padding: 32px;
+    }
+    .prog-labels {
+      display: flex; justify-content: space-between; margin-bottom: 14px;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+    }
+    .prog-labels .s { color: var(--muted); }
+    .prog-labels .e { color: var(--accent); }
+    .prog-track { height: 6px; background: var(--border); position: relative; overflow: visible; }
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #534AB8, #FF664C);
+      width: 3.33%; transition: width 1.2s ease; position: relative;
+    }
+    .prog-fill::after {
+      content: ''; position: absolute; right: -8px; top: -5px;
+      width: 16px; height: 16px;
+      background: var(--accent2); border-radius: 50%;
+      border: 2px solid var(--bg);
+    }
+    .milestones {
+      display: flex; justify-content: space-between; margin-top: 22px;
+    }
+    .ms { text-align: center; }
+    .ms-n { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+    .ms-l { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    /* DAY GRID */
+    .days-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+    }
+    .day-card {
+      background: var(--card); padding: 20px;
+      transition: background 0.18s; cursor: default;
+      text-decoration: none; display: block; color: inherit;
+    }
+    .day-card.live { background: #0b1610; cursor: pointer; }
+    .day-card.live::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--green);
+    }
+    .day-card.live { position: relative; }
+    .day-card.done { background: #0e0d1a; }
+    .day-card.upcoming { opacity: 0.38; }
+    .day-card.live:hover, .day-card.done:hover { background: #1c1f2a; }
+    .d-num {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); letter-spacing: 2px; margin-bottom: 10px;
+    }
+    .d-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; line-height: 1.3; margin-bottom: 7px; }
+    .d-topic { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .d-badge {
+      display: inline-block; margin-top: 14px;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 1px; padding: 3px 8px; border-radius: 1px;
+    }
+    .d-badge.lb { background: rgba(0,255,136,0.08); color: var(--green); border: 1px solid rgba(0,255,136,0.25); }
+    .d-badge.db { background: rgba(83,74,184,0.12); color: var(--accent); border: 1px solid rgba(83,74,184,0.35); }
+    .d-badge.ub { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    /* FORMULA */
+    .formula-list { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+    .f-row {
+      background: var(--card); padding: 22px 28px;
+      display: grid; grid-template-columns: 44px 1fr auto;
+      align-items: center; gap: 20px; transition: background 0.18s;
+    }
+    .f-row:hover { background: #1a1d28; }
+    .f-n { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; color: var(--border); }
+    .f-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+    .f-detail { font-size: 12px; color: var(--muted); }
+    .f-time { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent2); white-space: nowrap; }
+
+    /* OPENCLAW BOX */
+    .openclaw-box {
+      margin-top: 1px;
+      background: #0f0e1c;
+      border: 1px dashed rgba(83,74,184,0.5);
+      padding: 22px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .openclaw-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .openclaw-icon { font-size: 22px; }
+    .openclaw-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .openclaw-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .openclaw-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: #534AB8;
+      border: 1px dashed rgba(83,74,184,0.5);
+      padding: 4px 10px;
+      white-space: nowrap;
+    }
+
+    /* TOOLS */
+    .tools-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+    }
+    .tool {
+      background: var(--card); padding: 28px;
+      transition: background 0.18s;
+    }
+    .tool:hover { background: #1a1d28; }
+    .tool-icon { font-size: 22px; margin-bottom: 12px; }
+    .tool-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .tool-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .tool-pill {
+      display: inline-block; margin-top: 12px;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: #FF664C; border: 1px solid rgba(255,102,76,0.25); padding: 2px 7px;
+    }
+
+    /* CTA */
+    .cta-block {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 52px; margin-bottom: 80px;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 40px; align-items: center;
+    }
+    .cta-t { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.8px; margin-bottom: 7px; }
+    .cta-s { font-size: 14px; color: var(--muted); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #FF664C; color: white;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+      padding: 14px 28px; text-decoration: none; white-space: nowrap;
+      transition: all 0.18s; letter-spacing: 0.5px;
+    }
+    .btn:hover { background: #e0573f; transform: translateY(-1px); }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 28px 0; }
+    footer .fi { display: flex; justify-content: space-between; align-items: center; }
+    .f-copy { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
+    .f-links { display: flex; gap: 24px; }
+    .f-links a { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-decoration: none; }
+    .f-links a:hover { color: var(--accent); }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.55s ease, transform 0.55s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+
+    @media (max-width: 768px) {
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .tools-grid { grid-template-columns: 1fr; }
+      .cta-block { grid-template-columns: 1fr; }
+      .f-row { grid-template-columns: 32px 1fr; }
+      .f-time { display: none; }
+      .statement { padding: 32px 24px; }
+      h1 { letter-spacing: -2px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <nav>
+    <div class="container inner">
+      <div class="logo"><img src="../../logo.png" alt="build.public"></div>
+      <div class="live-pill">LIVE CHALLENGE</div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="eyebrow">Day 1 of 30 - The Challenge Begins</div>
+      <h1>
+        <span class="dim">from</span><br>
+        <em>zero</em><br>
+        <span class="dim">to</span> 10K<br>
+        <span class="dim">in 30 days</span>
+      </h1>
+      <p class="hero-desc">
+        Building <strong>real AI tools</strong> every single day - in public.
+        Claude Code. Antigravity. Agentic automation. 
+        One video a day. <strong>No filters. No fluff. Just builds.</strong>
+      </p>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="container">
+    <div class="stats-bar reveal">
+      <div class="stat">
+        <div class="stat-label">Day</div>
+        <div class="stat-val o" id="day-count">1</div>
+        <div class="stat-sub">/ 30</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Subscribers</div>
+        <div class="stat-val g" id="sub-count">0</div>
+        <div class="stat-sub">Target: 10,000</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Videos</div>
+        <div class="stat-val b" id="vid-count">0</div>
+        <div class="stat-sub">1 per day</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Status</div>
+        <div style="margin-top:10px"><div class="live-pill">LIVE</div></div>
+        <div class="stat-sub" style="margin-top:8px">Building now</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker">
+      <span class="tick-item">Claude Code</span>
+      <span class="tick-item">Antigravity IDE</span>
+      <span class="tick-item">OpenClaw</span>
+      <span class="tick-item">Agentic Automation</span>
+      <span class="tick-item">Building in Public</span>
+      <span class="tick-item">OpenRouter</span>
+      <span class="tick-item">n8n Workflows</span>
+      <span class="tick-item">MCP Servers</span>
+      <span class="tick-item">AI Dev Tools</span>
+      <span class="tick-item">Zero to 10K</span>
+      <span class="tick-item">Claude Code</span>
+      <span class="tick-item">Antigravity IDE</span>
+      <span class="tick-item">OpenClaw</span>
+      <span class="tick-item">Agentic Automation</span>
+      <span class="tick-item">Building in Public</span>
+      <span class="tick-item">OpenRouter</span>
+      <span class="tick-item">n8n Workflows</span>
+      <span class="tick-item">MCP Servers</span>
+      <span class="tick-item">AI Dev Tools</span>
+      <span class="tick-item">Zero to 10K</span>
+    </div>
+  </div>
+
+  <!-- STATEMENT -->
+  <div class="container">
+    <div class="statement reveal">
+      <p class="statement-body">
+        Every day I pick an AI tool, <em>build something real with it</em>, 
+        and show you exactly how - the prompt, the workflow, the result. 
+        No theory. No slideshow. <em>Just building.</em>
+      </p>
+      <div class="statement-attr">- The challenge. Day 1. March 2026.</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">02</span>
+        <h2 class="sec-t">Challenge Progress</h2>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-labels">
+          <span class="s">DAY 1 - START</span>
+          <span class="e">DAY 30 - 10K TARGET</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" id="prog"></div>
+        </div>
+        <div class="milestones">
+          <div class="ms"><div class="ms-n">0</div><div class="ms-l">Start</div></div>
+          <div class="ms"><div class="ms-n">500</div><div class="ms-l">Day 7</div></div>
+          <div class="ms"><div class="ms-n">2K</div><div class="ms-l">Day 14</div></div>
+          <div class="ms"><div class="ms-n">5K</div><div class="ms-l">Day 21</div></div>
+          <div class="ms"><div class="ms-n">10K</div><div class="ms-l">Day 30</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 30 DAY SCHEDULE -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">03</span>
+        <h2 class="sec-t">30-Day Build Schedule</h2>
+      </div>
+      <div class="days-grid" id="days-grid"></div>
+    </div>
+  </div>
+
+  <!-- FORMULA -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">04</span>
+        <h2 class="sec-t">The Daily System</h2>
+      </div>
+
+
+
+
+      </div>
+      <div class="openclaw-box">
+        <div class="openclaw-left">
+          <span class="openclaw-icon">&#x1F916;</span>
+          <div>
+            <div class="openclaw-title">OpenClaw Agents</div>
+            <div class="openclaw-sub">I will add my OpenClaw agent and sub-agents here soon.</div>
+          </div>
+        </div>
+        <div class="openclaw-badge">COMING SOON</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">05</span>
+        <h2 class="sec-t">The Stack</h2>
+      </div>
+      <div class="tools-grid">
+        <div class="tool"><div class="tool-icon">⚡</div><div class="tool-name">Claude Code</div><div class="tool-desc">Terminal-first AI coding agent. Builds entire apps from a single precise prompt.</div><div class="tool-pill">DAILY DRIVER</div></div>
+        <div class="tool"><div class="tool-icon">🚀</div><div class="tool-name">Antigravity IDE</div><div class="tool-desc">Google's agent-first IDE. Autonomous execution across browser, terminal, and codebase.</div><div class="tool-pill">DAILY DRIVER</div></div>
+        <div class="tool"><div class="tool-icon">🔓</div><div class="tool-name">OpenClaw</div><div class="tool-desc">Open-source AI agent. Runs locally. Full power, full control.</div><div class="tool-pill">IN USE</div></div>
+        <div class="tool"><div class="tool-icon">🌐</div><div class="tool-name">OpenRouter</div><div class="tool-desc">One API. 50+ models. Use the best model for each specific task.</div><div class="tool-pill">IN USE</div></div>
+        <div class="tool"><div class="tool-icon">🔗</div><div class="tool-name">n8n + MCP Servers</div><div class="tool-desc">Connecting everything. Workflows that run without touching the keyboard.</div><div class="tool-pill">IN USE</div></div>
+        <div class="tool"><div class="tool-icon">▲</div><div class="tool-name">Vercel + GitHub</div><div class="tool-desc">This site. Every build deployed and shareable. Free. Instant.</div><div class="tool-pill">THIS SITE</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="container">
+    <div class="cta-block reveal">
+      <div>
+        <div class="cta-t">New build drops every 24 hours.</div>
+        <div class="cta-s">Subscribe and watch the challenge unfold. Real builds. Real results. Every day.</div>
+      </div>
+      <a href="https://www.youtube.com/@eraofaiclub1" class="btn" id="yt-link" target="_blank">▶ Subscribe on YouTube</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <footer>
+      <div class="fi">
+        <div class="f-copy">build.public - Day <span id="f-day">1</span> of 30 - March 2026</div>
+        <div class="f-links">
+          <a href="https://www.youtube.com/@eraofaiclub1" id="f-yt" target="_blank">YouTube</a>
+          <a href="#" id="f-tw">Twitter / X</a>
+          <a href="#" id="f-gh">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const DAYS = [
+      { t: "Agent Command Kit", d: "Build a Mission Control dashboard — single HTML file, AI-built, fully yours.", s: "live", link: "day1.html" },
+      { t: "First Claude Code Build", d: "One prompt. One complete app. Here's exactly what happened.", s: "upcoming" },
+      { t: "Antigravity IDE First Look", d: "Google's agent-first IDE. Is it better than everything else?", s: "upcoming" },
+      { t: "Claude Code + Antigravity", d: "What happens when you run both together? I tested it.", s: "upcoming" },
+      { t: "OpenClaw Walkthrough", d: "Open-source AI agent. Full power, zero cost.", s: "upcoming" },
+      { t: "Building a Real Automation", d: "Complete content pipeline - built live in under 2 hours.", s: "upcoming" },
+      { t: "Week 1 Results", d: "Views, subscribers, what worked, what didn't. Real numbers.", s: "upcoming" },
+      { t: "AI Agent from Scratch", d: "No experience required. Building a working agent in 15 minutes.", s: "upcoming" },
+      { t: "MCP Servers - Simply Explained", d: "The thing everyone's talking about. What it actually does.", s: "upcoming" },
+      { t: "OpenRouter Deep Dive", d: "50+ models, one API. Which one actually wins?", s: "upcoming" },
+      { t: "My Full AI Dev Stack", d: "Every tool I use, why I use it, and what it costs.", s: "upcoming" },
+      { t: "Live Build: SaaS in 1 Hour", d: "Start. Build. Deploy. Start to finish, no cuts.", s: "upcoming" },
+      { t: "Agentic Workflow Tutorial", d: "One prompt → 3 agents → complete output. Step by step.", s: "upcoming" },
+      { t: "2 Week Check-In", d: "Halfway through the first half. Honest numbers and lessons.", s: "upcoming" },
+      { t: "AI Services Businesses Pay For", d: "5 automations worth $1K–$5K each. Build them yourself.", s: "upcoming" },
+      { t: "Client Build - Live", d: "Building a real automation for a real use case. Watch.", s: "upcoming" },
+      { t: "n8n + Claude Automation", d: "Connecting AI to everything. The full power workflow.", s: "upcoming" },
+      { t: "Competitor Analysis with AI", d: "Using NotebookLM + Claude to reverse-engineer top channels.", s: "upcoming" },
+      { t: "Building for a Subscriber", d: "You asked, I'm building it. Live on camera.", s: "upcoming" },
+      { t: "Deploying to Vercel - Full Guide", d: "This website. From zero code to live URL in 5 minutes.", s: "upcoming" },
+      { t: "3 Week Report", d: "Real data, real lessons, what I'd do differently.", s: "upcoming" },
+      { t: "Prompt Engineering That Works", d: "The exact prompts I use every day. No gatekeeping.", s: "upcoming" },
+      { t: "Chrome Extension with Claude Code", d: "Claude makes this embarrassingly fast. Watch.", s: "upcoming" },
+      { t: "The Gemini + Claude Combo", d: "Two models, one autopilot workflow. Runs itself.", s: "upcoming" },
+      { t: "My Results Update", d: "Channel, builds, everything. Honest breakdown.", s: "upcoming" },
+      { t: "Build a Chrome Extension", d: "Start to finish. Real extension, real deployment.", s: "upcoming" },
+      { t: "Subscriber Q&A - Live", d: "Real questions. Real demos. No scripted answers.", s: "upcoming" },
+      { t: "Tools I Stopped Using", d: "Cutting what doesn't work. What replaced it and why.", s: "upcoming" },
+      { t: "Day 29 - Final Push", d: "Everything I've learned. The full picture.", s: "upcoming" },
+      { t: "THE FINAL RESULT", d: "Did I hit 10K? Full breakdown. What comes next.", s: "upcoming" },
+    ];
+
+    const grid = document.getElementById('days-grid');
+    DAYS.forEach((d, i) => {
+      const n = i + 1;
+      const bc = d.s === 'live' ? 'lb' : d.s === 'done' ? 'db' : 'ub';
+      const bt = d.s === 'live' ? '● LIVE TODAY' : d.s === 'done' ? '✓ DONE' : `DAY ${n}`;
+      const tag = d.link ? 'a' : 'div';
+      const el = document.createElement(tag);
+      el.className = `day-card ${d.s}`;
+      if (d.link) el.href = d.link;
+      el.innerHTML = `
+        <div class="d-num">DAY ${String(n).padStart(2,'0')}</div>
+        <div class="d-title">${d.t}</div>
+        <div class="d-topic">${d.d}</div>
+        <span class="d-badge ${bc}">${bt}</span>
+      `;
+      grid.appendChild(el);
+    });
+
+    // Scroll reveal
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) setTimeout(() => e.target.classList.add('in'), i * 60);
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+    // ── YouTube Config ──
+    // Get your API key: https://console.cloud.google.com → Enable YouTube Data API v3 → Credentials → Create API Key
+    const YT_API_KEY = 'AIzaSyAjnGQQg98wgdTBobkIeTGpSKLT2vdOHuM';
+    const YT_CHANNEL_HANDLE = 'eraofaiclub1';
+    const CHALLENGE_START = new Date('2026-03-03T00:00:00');
+
+    // Count animation
+    function count(el, target, ms = 1200) {
+      let s;
+      const step = ts => {
+        if (!s) s = ts;
+        const p = Math.min((ts - s) / ms, 1);
+        el.textContent = Math.floor(p * target).toLocaleString();
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    // Calculate challenge day (1-30, capped)
+    function getChallengeDay() {
+      const now = new Date();
+      const diff = Math.floor((now - CHALLENGE_START) / (1000 * 60 * 60 * 24));
+      return Math.max(1, Math.min(diff + 1, 30));
+    }
+
+    // Fetch real YouTube stats
+    async function fetchYouTubeStats() {
+      if (!YT_API_KEY || YT_API_KEY === 'YOUR_API_KEY_HERE') return null;
+      try {
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/channels?part=statistics&forHandle=${YT_CHANNEL_HANDLE}&key=${YT_API_KEY}`
+        );
+        const data = await res.json();
+        if (data.items && data.items.length > 0) {
+          const stats = data.items[0].statistics;
+          return {
+            subscribers: parseInt(stats.subscriberCount, 10),
+            videos: parseInt(stats.videoCount, 10)
+          };
+        }
+      } catch (e) {
+        console.warn('YouTube API fetch failed:', e);
+      }
+      return null;
+    }
+
+    // Update all stats on page
+    async function updateStats(animate) {
+      const day = getChallengeDay();
+      const ms = animate ? 700 : 0;
+
+      // Day count
+      count(document.getElementById('day-count'), day, ms);
+      document.getElementById('f-day').textContent = day;
+
+      // Progress bar
+      const prog = document.getElementById('prog');
+      if (prog) prog.style.width = ((day / 30) * 100) + '%';
+
+      // Eyebrow text
+      const eyebrow = document.querySelector('.eyebrow');
+      if (eyebrow) eyebrow.textContent = `Day ${day} of 30 - The Challenge Begins`;
+
+      // Fetch YouTube data
+      const yt = await fetchYouTubeStats();
+      if (yt) {
+        count(document.getElementById('sub-count'), yt.subscribers, ms);
+        count(document.getElementById('vid-count'), yt.videos, ms);
+      } else {
+        // Fallback: show 0 if API is not configured or fails
+        count(document.getElementById('sub-count'), 0, ms);
+        count(document.getElementById('vid-count'), 0, ms);
+      }
+    }
+
+    // Initial load
+    window.addEventListener('load', () => {
+      updateStats(true);
+      // Refresh every 5 minutes
+      setInterval(() => updateStats(false), 5 * 60 * 1000);
+    });
+  </script>
+</body>
+</html>
