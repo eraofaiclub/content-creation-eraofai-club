@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 03 — OpenClaw Cost Optimization Guide | Building AI in Public</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050608;
+      --surface: #0d0f14;
+      --card: #13161e;
+      --border: #1e2230;
+      --accent: #534AB8;
+      --accent2: #FF664C;
+      --accent3: #FF664C;
+      --text: #e8eaf2;
+      --muted: #5c6178;
+      --green: #00ff88;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 600px; height: 600px; background: rgba(83,74,184,0.10); top: -200px; left: -200px; }
+    .orb-2 { width: 500px; height: 500px; background: rgba(255,102,76,0.07); bottom: 20%; right: -150px; }
+    .orb-3 { width: 400px; height: 400px; background: rgba(83,74,184,0.06); top: 40%; left: 30%; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* NAV */
+    nav {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: rgba(5,6,8,0.88);
+      backdrop-filter: blur(20px);
+      z-index: 100;
+    }
+    nav .inner { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; }
+    .logo img { height: 32px; width: auto; }
+    .logo a { display: flex; align-items: center; text-decoration: none; }
+
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .back-link {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); text-decoration: none; letter-spacing: 1.5px;
+      display: flex; align-items: center; gap: 6px;
+      transition: color 0.18s;
+    }
+    .back-link:hover { color: var(--accent); }
+
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--green); letter-spacing: 1.5px;
+      border: 1px solid rgba(0,255,136,0.25);
+      padding: 5px 12px; border-radius: 2px;
+    }
+    .live-pill::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--green); border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* HERO */
+    .hero { padding: 80px 0 60px; }
+    .eyebrow {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); letter-spacing: 3px; text-transform: uppercase;
+      margin-bottom: 28px; display: flex; align-items: center; gap: 12px;
+    }
+    .eyebrow::before { content: ''; display: block; width: 36px; height: 1px; background: var(--accent); }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(40px, 7vw, 72px);
+      font-weight: 800; line-height: 0.95; letter-spacing: -2px;
+      margin-bottom: 28px;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+
+    .hero-desc {
+      font-size: 18px; color: var(--muted); max-width: 600px;
+      line-height: 1.65; font-weight: 300;
+    }
+    .hero-desc strong { color: var(--text); font-weight: 500; }
+
+    /* SECTIONS */
+    .sec { margin-bottom: 80px; }
+    .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 36px; }
+    .sec-n {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); border: 1px solid rgba(83,74,184,0.4);
+      padding: 2px 8px;
+    }
+    .sec-t { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.8px; }
+
+    /* FEATURE CARDS */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+      margin-bottom: 80px;
+    }
+    .feature {
+      background: var(--card); padding: 32px;
+      transition: background 0.18s;
+    }
+    .feature:hover { background: #1a1d28; }
+    .feature-icon { font-size: 28px; margin-bottom: 16px; }
+    .feature-name { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* STEPS */
+    .steps-list {
+      display: flex; flex-direction: column;
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+    }
+    .step-row {
+      background: var(--card); padding: 28px 32px;
+      display: grid; grid-template-columns: 48px 1fr;
+      align-items: start; gap: 20px; transition: background 0.18s;
+    }
+    .step-row:hover { background: #1a1d28; }
+    .step-num {
+      font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800;
+      color: var(--border); line-height: 1;
+    }
+    .step-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .step-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* WHY BLOCK */
+    .why-block {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 44px; margin-bottom: 80px;
+    }
+    .why-block h3 {
+      font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700;
+      letter-spacing: -0.5px; margin-bottom: 12px;
+    }
+    .why-intro {
+      font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 28px;
+      max-width: 700px;
+    }
+    .why-list { display: flex; flex-direction: column; gap: 12px; }
+    .why-item {
+      font-size: 14px; line-height: 1.55; color: var(--text);
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .why-item .tick {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent); flex-shrink: 0; margin-top: 2px;
+    }
+
+    /* TIP BOX */
+    .tip-box {
+      background: rgba(83,74,184,0.08); border: 1px solid rgba(83,74,184,0.25);
+      padding: 16px 20px; font-size: 13px; color: var(--muted); line-height: 1.55;
+    }
+    .tip-box strong { color: var(--accent); font-weight: 700; }
+
+    /* PRICING TIERS */
+    .tier-block {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 36px; margin-bottom: 16px;
+    }
+    .tier-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+    }
+    .tier-badge {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 2px; font-weight: 700;
+    }
+    .tier-badge.green { background: rgba(0,255,136,0.12); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+    .tier-badge.yellow { background: rgba(255,200,50,0.12); color: #ffc832; border: 1px solid rgba(255,200,50,0.3); }
+    .tier-badge.red { background: rgba(255,102,76,0.12); color: var(--accent2); border: 1px solid rgba(255,102,76,0.3); }
+    .tier-title {
+      font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
+    }
+    .tier-subtitle {
+      font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 6px;
+    }
+
+    /* RECOMMENDATION QUOTE */
+    .rec-block {
+      background: rgba(83,74,184,0.06); border-left: 3px solid var(--accent);
+      padding: 28px 32px; margin-bottom: 16px;
+    }
+    .rec-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .rec-text {
+      font-size: 14px; color: var(--text); line-height: 1.65; margin-bottom: 12px;
+    }
+    .rec-text:last-child { margin-bottom: 0; }
+
+    /* KEY UPDATES LIST */
+    .updates-list {
+      display: flex; flex-direction: column;
+      gap: 1px; background: var(--border); border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .update-item {
+      background: var(--card); padding: 20px 28px;
+      font-size: 13px; color: var(--muted); line-height: 1.6;
+      transition: background 0.18s;
+    }
+    .update-item:hover { background: #1a1d28; }
+    .update-item strong { color: var(--text); font-weight: 500; }
+    .update-item .highlight { color: var(--green); font-weight: 500; }
+
+    /* MODEL SECTION */
+    .model-block {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 36px; margin-bottom: 24px;
+    }
+    .model-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+    }
+    .model-icon { font-size: 24px; }
+    .model-name {
+      font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .model-tagline {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .model-desc {
+      font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 20px;
+      max-width: 800px;
+    }
+    .model-detail-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 8px; margin-top: 20px;
+    }
+    .model-detail-text {
+      font-size: 13px; color: var(--text); line-height: 1.55; margin-bottom: 12px;
+    }
+    .model-slug {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      color: var(--accent); background: rgba(83,74,184,0.1);
+      padding: 6px 12px; display: inline-block; margin-bottom: 16px;
+      border: 1px solid rgba(83,74,184,0.25);
+    }
+
+    /* PROMPT BLOCKS / CODE BLOCKS */
+    .prompt-section { margin-bottom: 20px; }
+    .prompt-code-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 20px 28px 28px;
+      margin-bottom: 12px;
+    }
+    .prompt-code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .prompt-code-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--muted); letter-spacing: 1.5px;
+    }
+    .copy-btn {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--accent); background: rgba(83,74,184,0.12);
+      border: 1px solid rgba(83,74,184,0.35);
+      padding: 5px 12px; cursor: pointer;
+      letter-spacing: 1px; transition: all 0.18s;
+    }
+    .copy-btn:hover { background: rgba(83,74,184,0.25); color: var(--text); }
+    .copy-btn.copied { color: var(--green); border-color: rgba(0,255,136,0.35); background: rgba(0,255,136,0.08); }
+
+    .prompt-code {
+      background: #0a0b10; border: 1px solid var(--border);
+      padding: 24px; font-family: 'Space Mono', monospace;
+      font-size: 12px; line-height: 1.7; color: var(--muted);
+      overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+      max-height: 420px; overflow-y: auto;
+    }
+    .prompt-code::-webkit-scrollbar { width: 6px; }
+    .prompt-code::-webkit-scrollbar-track { background: transparent; }
+    .prompt-code::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .prompt-code .var { color: var(--accent); }
+    .prompt-code .comment { color: #3a3d4a; }
+
+    /* INLINE CODE */
+    code.inline {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      background: rgba(83,74,184,0.1); color: var(--accent);
+      padding: 2px 6px; border: 1px solid rgba(83,74,184,0.2);
+    }
+
+    /* NEXT DAY */
+    .next-day {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 36px; display: flex; align-items: center;
+      justify-content: space-between; gap: 24px; margin-bottom: 80px;
+    }
+    .next-day-text { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 6px; }
+    .next-day-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+
+    /* CTA */
+    .cta-block {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 52px; margin-bottom: 80px;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 40px; align-items: center;
+    }
+    .cta-t { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.8px; margin-bottom: 7px; }
+    .cta-s { font-size: 14px; color: var(--muted); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #FF664C; color: white;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+      padding: 14px 28px; text-decoration: none; white-space: nowrap;
+      transition: all 0.18s; letter-spacing: 0.5px;
+    }
+    .btn:hover { background: #e0573f; transform: translateY(-1px); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--accent);
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+      padding: 14px 28px; text-decoration: none; white-space: nowrap;
+      border: 1px solid rgba(83,74,184,0.4);
+      transition: all 0.18s; letter-spacing: 0.5px;
+    }
+    .btn-outline:hover { background: rgba(83,74,184,0.1); transform: translateY(-1px); }
+
+    /* NOTE BOX */
+    .note-box {
+      background: rgba(0,255,136,0.04); border: 1px solid rgba(0,255,136,0.15);
+      padding: 16px 20px; font-size: 13px; color: var(--muted); line-height: 1.55;
+    }
+    .note-box strong { color: var(--green); font-weight: 700; }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 28px 0; }
+    footer .fi { display: flex; justify-content: space-between; align-items: center; }
+    .f-copy { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
+    .f-links { display: flex; gap: 24px; }
+    .f-links a { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-decoration: none; }
+    .f-links a:hover { color: var(--accent); }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.55s ease, transform 0.55s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+
+    @media (max-width: 768px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .cta-block { grid-template-columns: 1fr; }
+      .next-day { flex-direction: column; align-items: flex-start; }
+      .why-block { padding: 28px 24px; }
+      .step-row { grid-template-columns: 36px 1fr; }
+      .tier-block { padding: 24px; }
+      .model-block { padding: 24px; }
+      .rec-block { padding: 20px 24px; }
+      .prompt-code-wrap { padding: 16px 20px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <nav>
+    <div class="container inner">
+      <div class="logo"><a href="index.html"><img src="../../logo.png" alt="build.public"></a></div>
+      <div class="nav-right">
+        <a href="index.html" class="back-link">&larr; ALL DAYS</a>
+        <div class="live-pill">DAY 03</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="eyebrow">Day 03 of 30 — OpenClaw Cost Optimization Guide</div>
+      <h1>Cut Your<br><em>OpenClaw</em> API<br>Bill by <em>70-97%</em></h1>
+      <p class="hero-desc">
+        You're running OpenClaw on a <strong>Hostinger VPS</strong> with Docker and OpenRouter. If you haven't optimized your model routing and context usage, you're probably paying <strong>5-10x more</strong> than you should be. This guide walks you through the exact steps &mdash; no code changes, just smarter routing, leaner prompts, and strategic caching.
+      </p>
+    </div>
+  </section>
+
+  <!-- FEATURE CARDS -->
+  <div class="container">
+    <div class="features-grid reveal">
+      <div class="feature">
+        <div class="feature-icon">&#x1F4B0;</div>
+        <div class="feature-name">70-97% Savings</div>
+        <div class="feature-desc">Cut your API costs dramatically with smarter model routing and context management. No code changes required.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">&#x2699;</div>
+        <div class="feature-name">Config Only</div>
+        <div class="feature-desc">Most optimizations are pure configuration. No complex workarounds &mdash; just smarter routing, leaner prompts, and caching.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">&#x23F0;</div>
+        <div class="feature-name">10 Min Setup</div>
+        <div class="feature-desc">Get the quick-start setup running in 10 minutes. VPS + Docker + OpenRouter, ready to go.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 01: COST DRIVERS -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">01</span>
+        <h2 class="sec-t">Where Your Money Goes (The 6 Cost Drivers)</h2>
+      </div>
+
+      <p style="font-size:14px; color:var(--muted); margin-bottom:28px; line-height:1.65; max-width:700px;">
+        Before you optimize, you need to understand what's eating your budget. Here are the six hidden cost drivers in OpenClaw.
+      </p>
+
+      <div class="tip-box" style="margin-bottom:0;">
+        <strong>The dirty secret:</strong> 136K tokens of base overhead is unavoidable &mdash; that's your system prompt + tool schemas. You can't eliminate it, but you can make it count by reducing per-request waste around it.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 02: QUICK-START SETUP -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">02</span>
+        <h2 class="sec-t">Quick-Start Setup</h2>
+      </div>
+
+      <p style="font-size:16px; color:var(--text); font-family:'Syne',sans-serif; font-weight:700; margin-bottom:24px;">
+        Follow This Simple 5 Minute Setup (Recommended)
+      </p>
+
+      <div class="steps-list">
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-name">Setup your Private VPS with Clawdbot</div>
+            <div class="step-desc">Get your own private VPS with Clawdbot pre-configured in 10 minutes. Everything runs on Docker so you can deploy and manage with ease.</div>
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-name">Optional: Use Discount Code</div>
+            <div class="step-desc">Use code <strong style="color:var(--accent);">MOE-LUEKER</strong> for a discount on your Hostinger VPS setup.</div>
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-name">Set Up OpenRouter</div>
+            <div class="step-desc">Get access to all AI models with a single API key. OpenRouter lets you route to any model &mdash; Claude, GPT, Gemini, DeepSeek, and more &mdash; through one unified endpoint.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 03: PRICING CHEAT SHEET -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">03</span>
+        <h2 class="sec-t">2026 Model Pricing Cheat Sheet</h2>
+      </div>
+
+      <p style="font-size:14px; color:var(--muted); margin-bottom:28px; line-height:1.65; max-width:700px;">
+        Here's the current pricing landscape as of February 24, 2026 (all prices per 1M tokens, via OpenRouter):
+      </p>
+
+      <!-- GREEN TIER -->
+      <div class="tier-block reveal">
+        <div class="tier-header">
+          <span class="tier-badge green">GREEN TIER</span>
+          <span class="tier-title">Budget (Workhorse)</span>
+        </div>
+        <p class="tier-subtitle">These are the models you should be using for 80%+ of your daily tasks.</p>
+        <p class="tier-subtitle">Blended = weighted average at 3:1 input-to-output ratio (typical for chat).</p>
+      </div>
+
+      <!-- YELLOW TIER -->
+      <div class="tier-block reveal">
+        <div class="tier-header">
+          <span class="tier-badge yellow">YELLOW TIER</span>
+          <span class="tier-title">Mid Tier</span>
+        </div>
+        <p class="tier-subtitle">Quality When You Need It.</p>
+      </div>
+
+      <!-- RED TIER -->
+      <div class="tier-block reveal">
+        <div class="tier-header">
+          <span class="tier-badge red">RED TIER</span>
+          <span class="tier-title">Premium</span>
+        </div>
+        <p class="tier-subtitle">Use Sparingly.</p>
+      </div>
+
+      <!-- RECOMMENDATION -->
+      <div class="rec-block reveal">
+        <div class="rec-label">OUR RECOMMENDATION</div>
+        <p class="rec-text">
+          <strong>MiniMax M2.5</strong> as your primary daily driver. It hits the sweet spot between cost ($0.53/M blended) and capability &mdash; strong enough for 80% of tasks, with a 1M context window. Use <strong>Gemini Flash-Lite</strong> ($0.18/M) for heartbeats and simple checks. Escalate to <strong>Sonnet 4.6</strong> ($6/M) only when quality matters.
+        </p>
+        <p class="rec-text">
+          If you're heavily code-focused, <strong>DeepSeek V3.2</strong> ($0.32/M) is even cheaper and matches frontier models on coding benchmarks.
+        </p>
+      </div>
+
+      <!-- KEY PRICING UPDATES -->
+      <p style="font-size:16px; color:var(--text); font-family:'Syne',sans-serif; font-weight:700; margin-bottom:16px; margin-top:32px;">
+        Key Pricing Updates (February 2026)
+      </p>
+
+      <div class="updates-list reveal">
+        <div class="update-item">
+          <strong>Claude Opus price drop:</strong> Opus 4.6 went from $15/$75 to $5/$25 &mdash; a <span class="highlight">67% cut</span>. Still expensive for daily use, but reasonable for critical tasks.
+        </div>
+        <div class="update-item">
+          <strong>Claude Sonnet 4.6</strong> (released Feb 17, 2026): Nearly matches Opus performance at $3/$15. The new sweet spot for quality work.
+        </div>
+        <div class="update-item">
+          <strong>MiniMax M2.5</strong> (released Feb 12, 2026): 230B total params (10B active), MIT license, $0.30/$1.20. "The first frontier model where users don't need to worry about cost."
+        </div>
+        <div class="update-item">
+          <strong>GLM-5</strong> (released Feb 11, 2026): Z.ai's flagship, 744B MoE with 40B active. $0.95/$2.55 on OpenRouter. <span class="highlight">77.8% SWE-bench Verified</span>.
+        </div>
+        <div class="update-item">
+          <strong>Kimi K2.5</strong> (released Jan 27, 2026): Moonshot AI's 1T param MoE with 32B active. $0.50/$2.80 on OpenRouter. Built-in context caching drops repeat input costs by <span class="highlight">75%</span>.
+        </div>
+        <div class="update-item">
+          <strong>DeepSeek V4</strong> expected mid-Feb 2026, likely similar pricing to V3.2.
+        </div>
+      </div>
+
+      <div class="note-box reveal">
+        <strong>Note:</strong> For your Hostinger setup: You have one OpenRouter API key. All these models are available through it. No local LLMs needed.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 04: GLM-5 AND KIMI K2.5 -->
+  <div class="container">
+    <div class="sec reveal">
+      <div class="sec-head">
+        <span class="sec-n">04</span>
+        <h2 class="sec-t">Using GLM-5 and Kimi K2.5 via OpenRouter</h2>
+      </div>
+
+      <p style="font-size:14px; color:var(--muted); margin-bottom:36px; line-height:1.65; max-width:700px;">
+        These two models are recent additions that punch way above their price class.
+      </p>
+
+      <!-- GLM-5 -->
+      <div class="model-block reveal">
+        <div class="model-header">
+          <span class="model-icon">&#x1F9E0;</span>
+          <span class="model-name">GLM-5 (Z.ai)</span>
+        </div>
+        <div class="model-tagline">The Coding Specialist</div>
+
+        <p class="model-desc">
+          GLM-5 dropped on February 11, 2026 and immediately made waves. It's a 744B MoE model (40B active parameters) built for complex systems design and long-horizon agent workflows. On SWE-bench Verified it scores 77.8%.
+        </p>
+
+        <div class="model-detail-label">WHY YOU'D USE IT</div>
+        <p class="model-detail-text">Code, debug, backend architecture &mdash; at 1/4 the price of Claude Sonnet.</p>
+
+        <div class="model-detail-label">OPENROUTER SLUG</div>
+        <div class="model-slug">openrouter/z-ai/glm-5</div>
+
+        <div class="model-detail-label">CHAT COMMAND TO ADD</div>
+        <div class="prompt-code-wrap" style="margin-bottom:16px; padding:16px 20px 20px;">
+          <div class="prompt-code-header">
+            <span class="prompt-code-label">ADD GLM-5 VIA CHAT</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'glm5-chat')">COPY</button>
+          </div>
+          <pre class="prompt-code" id="glm5-chat" style="max-height:120px;">Please add GLM-5 to my available models via OpenRouter. The slug is openrouter/z-ai/glm-5 with alias "glm". It has a 205K context window.</pre>
+        </div>
+
+        <p class="model-detail-text">Then switch with <code class="inline">/model glm</code></p>
+
+        <div class="model-detail-label">MANUAL CONFIG ALTERNATIVE</div>
+        <div class="prompt-code-wrap" style="margin-bottom:16px; padding:16px 20px 20px;">
+          <div class="prompt-code-header">
+            <span class="prompt-code-label">JSON CONFIG</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'glm5-config')">COPY</button>
+          </div>
+          <pre class="prompt-code" id="glm5-config" style="max-height:180px;">{
+  "id": "z-ai/glm-5",
+  "name": "GLM-5",
+  "contextWindow": 205000,
+  "maxTokens": 8192
+}</pre>
+        </div>
+
+        <div class="model-detail-label">AGENTS.DEFAULTS.MODELS</div>
+        <div class="prompt-code-wrap" style="margin-bottom:16px; padding:16px 20px 20px;">
+          <div class="prompt-code-header">
+            <span class="prompt-code-label">ALIAS CONFIG</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'glm5-alias')">COPY</button>
+          </div>
+          <pre class="prompt-code" id="glm5-alias" style="max-height:80px;">"openrouter/z-ai/glm-5": { "alias": "glm" }</pre>
+        </div>
+
+        <div class="tip-box">
+          <strong>Pro tip:</strong> GLM-5 is particularly strong at iterative self-correction. For simpler coding tasks, DeepSeek V3.2 is cheaper ($0.31/M vs. $1.35/M blended).
+        </div>
+      </div>
+
+      <!-- KIMI K2.5 -->
+      <div class="model-block reveal">
+        <div class="model-header">
+          <span class="model-icon">&#x1F30A;</span>
+          <span class="model-name">Kimi K2.5 (Moonshot AI)</span>
+        </div>
+        <div class="model-tagline">The Reasoning + Multimodal Powerhouse</div>
+
+        <p class="model-desc">
+          Kimi K2.5 launched January 27, 2026. It's a massive 1T parameter MoE model (32B active) with native multimodal support &mdash; it can read images, generate visual code, and reason about UI screenshots.
+        </p>
+
+        <div class="model-detail-label">KILLER FEATURE</div>
+        <p class="model-detail-text">Auto-caching drops repeat input costs from $0.50/M to $0.13/M &mdash; a <strong style="color:var(--green);">75% discount</strong> on cached tokens.</p>
+
+        <div class="model-detail-label">OPENROUTER SLUG</div>
+        <div class="model-slug">openrouter/moonshotai/kimi-k2.5</div>
+
+        <div class="model-detail-label">CHAT COMMAND TO ADD</div>
+        <div class="prompt-code-wrap" style="margin-bottom:16px; padding:16px 20px 20px;">
+          <div class="prompt-code-header">
+            <span class="prompt-code-label">ADD KIMI K2.5 VIA CHAT</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'kimi-chat')">COPY</button>
+          </div>
+          <pre class="prompt-code" id="kimi-chat" style="max-height:120px;">Please add Kimi K2.5 to my available models via OpenRouter. The slug is openrouter/moonshotai/kimi-k2.5 with alias "kimi". It has a 262K context window.</pre>
+        </div>
+
+        <p class="model-detail-text">Then switch with <code class="inline">/model kimi</code></p>
+
+        <div class="model-detail-label">MANUAL CONFIG ALTERNATIVE</div>
+        <div class="prompt-code-wrap" style="margin-bottom:16px; padding:16px 20px 20px;">
+          <div class="prompt-code-header">
+            <span class="prompt-code-label">JSON CONFIG</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'kimi-config')">COPY</button>
+          </div>
+          <pre class="prompt-code" id="kimi-config" style="max-height:180px;">{
+  "id": "moonshotai/kimi-k2.5",
+  "name": "Kimi K2.5",
+  "contextWindow": 262000,
+  "maxTokens": 8192
+}</pre>
+        </div>
+
+        <div class="model-detail-label">AGENTS.DEFAULTS.MODELS</div>
+        <div class="prompt-code-wrap" style="margin-bottom:16px; padding:16px 20px 20px;">
+          <div class="prompt-code-header">
+            <span class="prompt-code-label">ALIAS CONFIG</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'kimi-alias')">COPY</button>
+          </div>
+          <pre class="prompt-code" id="kimi-alias" style="max-height:80px;">"openrouter/moonshotai/kimi-k2.5": { "alias": "kimi" }</pre>
+        </div>
+
+        <div class="tip-box">
+          <strong>Pro tip:</strong> Kimi K2.5's auto-caching makes it ideal for iterative conversations where you're refining the same code or design. The longer the conversation, the more you save.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT DAY -->
+  <div class="container">
+    <a href="day4.html" class="next-day reveal" style="text-decoration:none; color:inherit;">
+      <div>
+        <div class="next-day-text">UP NEXT &mdash; DAY 04</div>
+        <div class="next-day-title">Coming Soon &rarr;</div>
+      </div>
+      <div class="btn-outline">View Day 4</div>
+    </a>
+  </div>
+
+  <!-- CTA -->
+  <div class="container">
+    <div class="cta-block reveal">
+      <div>
+        <div class="cta-t">Watch the full cost optimization walkthrough.</div>
+        <div class="cta-s">Every config change, every model swap, every savings tip &mdash; recorded live. No cuts, no fluff.</div>
+      </div>
+      <a href="https://www.youtube.com/@eraofaiclub1" class="btn" target="_blank">&#x25B6; Subscribe on YouTube</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <footer>
+      <div class="fi">
+        <div class="f-copy">build.public &mdash; Day 03 of 30 &mdash; March 2026</div>
+        <div class="f-links">
+          <a href="https://www.youtube.com/@eraofaiclub1" target="_blank">YouTube</a>
+          <a href="#">Twitter / X</a>
+          <a href="#">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Copy prompt to clipboard
+    function copyPrompt(btn, id) {
+      const el = document.getElementById(id);
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'COPIED!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = btn.dataset.original || 'COPY';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+      if (!btn.dataset.original) {
+        btn.dataset.original = btn.textContent;
+      }
+    }
+
+    // Scroll reveal
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) setTimeout(() => e.target.classList.add('in'), i * 60);
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  </script>
+</body>
+</html>
