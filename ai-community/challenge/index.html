@@ -544,56 +544,90 @@
   </div>
 
   <script>
-    const DAYS = [
-      { t: "Agent Command Kit", d: "Build a Mission Control dashboard — single HTML file, AI-built, fully yours.", s: "live", link: "day1.html" },
-      { t: "First Claude Code Build", d: "One prompt. One complete app. Here's exactly what happened.", s: "upcoming" },
-      { t: "Antigravity IDE First Look", d: "Google's agent-first IDE. Is it better than everything else?", s: "upcoming" },
-      { t: "Claude Code + Antigravity", d: "What happens when you run both together? I tested it.", s: "upcoming" },
-      { t: "OpenClaw Walkthrough", d: "Open-source AI agent. Full power, zero cost.", s: "upcoming" },
-      { t: "Building a Real Automation", d: "Complete content pipeline - built live in under 2 hours.", s: "upcoming" },
-      { t: "Week 1 Results", d: "Views, subscribers, what worked, what didn't. Real numbers.", s: "upcoming" },
-      { t: "AI Agent from Scratch", d: "No experience required. Building a working agent in 15 minutes.", s: "upcoming" },
-      { t: "MCP Servers - Simply Explained", d: "The thing everyone's talking about. What it actually does.", s: "upcoming" },
-      { t: "OpenRouter Deep Dive", d: "50+ models, one API. Which one actually wins?", s: "upcoming" },
-      { t: "My Full AI Dev Stack", d: "Every tool I use, why I use it, and what it costs.", s: "upcoming" },
-      { t: "Live Build: SaaS in 1 Hour", d: "Start. Build. Deploy. Start to finish, no cuts.", s: "upcoming" },
-      { t: "Agentic Workflow Tutorial", d: "One prompt → 3 agents → complete output. Step by step.", s: "upcoming" },
-      { t: "2 Week Check-In", d: "Halfway through the first half. Honest numbers and lessons.", s: "upcoming" },
-      { t: "AI Services Businesses Pay For", d: "5 automations worth $1K–$5K each. Build them yourself.", s: "upcoming" },
-      { t: "Client Build - Live", d: "Building a real automation for a real use case. Watch.", s: "upcoming" },
-      { t: "n8n + Claude Automation", d: "Connecting AI to everything. The full power workflow.", s: "upcoming" },
-      { t: "Competitor Analysis with AI", d: "Using NotebookLM + Claude to reverse-engineer top channels.", s: "upcoming" },
-      { t: "Building for a Subscriber", d: "You asked, I'm building it. Live on camera.", s: "upcoming" },
-      { t: "Deploying to Vercel - Full Guide", d: "This website. From zero code to live URL in 5 minutes.", s: "upcoming" },
-      { t: "3 Week Report", d: "Real data, real lessons, what I'd do differently.", s: "upcoming" },
-      { t: "Prompt Engineering That Works", d: "The exact prompts I use every day. No gatekeeping.", s: "upcoming" },
-      { t: "Chrome Extension with Claude Code", d: "Claude makes this embarrassingly fast. Watch.", s: "upcoming" },
-      { t: "The Gemini + Claude Combo", d: "Two models, one autopilot workflow. Runs itself.", s: "upcoming" },
-      { t: "My Results Update", d: "Channel, builds, everything. Honest breakdown.", s: "upcoming" },
-      { t: "Build a Chrome Extension", d: "Start to finish. Real extension, real deployment.", s: "upcoming" },
-      { t: "Subscriber Q&A - Live", d: "Real questions. Real demos. No scripted answers.", s: "upcoming" },
-      { t: "Tools I Stopped Using", d: "Cutting what doesn't work. What replaced it and why.", s: "upcoming" },
-      { t: "Day 29 - Final Push", d: "Everything I've learned. The full picture.", s: "upcoming" },
-      { t: "THE FINAL RESULT", d: "Did I hit 10K? Full breakdown. What comes next.", s: "upcoming" },
-    ];
+    // Notion Integration
+    async function loadSchedule() {
+      const grid = document.getElementById('days-grid');
+      
+      try {
+        const res = await fetch('/.netlify/functions/get-schedule');
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        
+        renderSchedule(data);
 
-    const grid = document.getElementById('days-grid');
-    DAYS.forEach((d, i) => {
-      const n = i + 1;
-      const bc = d.s === 'live' ? 'lb' : d.s === 'done' ? 'db' : 'ub';
-      const bt = d.s === 'live' ? '● LIVE TODAY' : d.s === 'done' ? '✓ DONE' : `DAY ${n}`;
-      const tag = d.link ? 'a' : 'div';
-      const el = document.createElement(tag);
-      el.className = `day-card ${d.s}`;
-      if (d.link) el.href = d.link;
-      el.innerHTML = `
-        <div class="d-num">DAY ${String(n).padStart(2,'0')}</div>
-        <div class="d-title">${d.t}</div>
-        <div class="d-topic">${d.d}</div>
-        <span class="d-badge ${bc}">${bt}</span>
-      `;
-      grid.appendChild(el);
-    });
+      } catch (err) {
+        console.error('Failed to load schedule from Notion:', err);
+        // Fallback to hardcoded DAYS if fetch fails
+        renderFallback();
+      }
+    }
+
+    function renderSchedule(days) {
+      const grid = document.getElementById('days-grid');
+      grid.innerHTML = ''; // Clear existing content
+
+      days.forEach((d) => {
+        const n = d.dayNum || d.n; // Support both formats
+        // Determine status and styling
+        let bc = 'ub', bt = `DAY ${n}`;
+        if (d.s === 'live') { bc = 'lb'; bt = '● LIVE TODAY'; }
+        else if (d.s === 'done') { bc = 'db'; bt = '✓ DONE'; }
+        
+        const tag = d.link ? 'a' : 'div';
+        
+        const el = document.createElement(tag);
+        el.className = `day-card ${d.s}`;
+        if (d.link) el.href = d.link;
+        
+        el.innerHTML = `
+          <div class="d-num">DAY ${String(n).padStart(2,'0')}</div>
+          <div class="d-title">${d.t}</div>
+          <div class="d-topic">${d.d}</div>
+          <span class="d-badge ${bc}">${bt}</span>
+        `;
+        grid.appendChild(el);
+      });
+    }
+
+    function renderFallback() {
+      const DAYS = [
+        { n: 1, t: "Agent Command Kit", d: "Build a Mission Control dashboard — single HTML file, AI-built, fully yours.", s: "live", link: "day1.html" },
+        { n: 2, t: "First Claude Code Build", d: "One prompt. One complete app. Here's exactly what happened.", s: "upcoming" },
+        { n: 3, t: "Antigravity IDE First Look", d: "Google's agent-first IDE. Is it better than everything else?", s: "upcoming" },
+        { n: 4, t: "Claude Code + Antigravity", d: "What happens when you run both together? I tested it.", s: "upcoming" },
+        { n: 5, t: "OpenClaw Walkthrough", d: "Open-source AI agent. Full power, zero cost.", s: "upcoming" },
+        { n: 6, t: "Building a Real Automation", d: "Complete content pipeline - built live in under 2 hours.", s: "upcoming" },
+        { n: 7, t: "Week 1 Results", d: "Views, subscribers, what worked, what didn't. Real numbers.", s: "upcoming" },
+        { n: 8, t: "AI Agent from Scratch", d: "No experience required. Building a working agent in 15 minutes.", s: "upcoming" },
+        { n: 9, t: "MCP Servers - Simply Explained", d: "The thing everyone's talking about. What it actually does.", s: "upcoming" },
+        { n: 10, t: "OpenRouter Deep Dive", d: "50+ models, one API. Which one actually wins?", s: "upcoming" },
+        { n: 11, t: "My Full AI Dev Stack", d: "Every tool I use, why I use it, and what it costs.", s: "upcoming" },
+        { n: 12, t: "Live Build: SaaS in 1 Hour", d: "Start. Build. Deploy. Start to finish, no cuts.", s: "upcoming" },
+        { n: 13, t: "Agentic Workflow Tutorial", d: "One prompt → 3 agents → complete output. Step by step.", s: "upcoming" },
+        { n: 14, t: "2 Week Check-In", d: "Halfway through the first half. Honest numbers and lessons.", s: "upcoming" },
+        { n: 15, t: "AI Services Businesses Pay For", d: "5 automations worth $1K–$5K each. Build them yourself.", s: "upcoming" },
+        { n: 16, t: "Client Build - Live", d: "Building a real automation for a real use case. Watch.", s: "upcoming" },
+        { n: 17, t: "n8n + Claude Automation", d: "Connecting AI to everything. The full power workflow.", s: "upcoming" },
+        { n: 18, t: "Competitor Analysis with AI", d: "Using NotebookLM + Claude to reverse-engineer top channels.", s: "upcoming" },
+        { n: 19, t: "Building for a Subscriber", d: "You asked, I'm building it. Live on camera.", s: "upcoming" },
+        { n: 20, t: "Deploying to Vercel - Full Guide", d: "This website. From zero code to live URL in 5 minutes.", s: "upcoming" },
+        { n: 21, t: "3 Week Report", d: "Real data, real lessons, what I'd do differently.", s: "upcoming" },
+        { n: 22, t: "Prompt Engineering That Works", d: "The exact prompts I use every day. No gatekeeping.", s: "upcoming" },
+        { n: 23, t: "Chrome Extension with Claude Code", d: "Claude makes this embarrassingly fast. Watch.", s: "upcoming" },
+        { n: 24, t: "The Gemini + Claude Combo", d: "Two models, one autopilot workflow. Runs itself.", s: "upcoming" },
+        { n: 25, t: "My Results Update", d: "Channel, builds, everything. Honest breakdown.", s: "upcoming" },
+        { n: 26, t: "Build a Chrome Extension", d: "Start to finish. Real extension, real deployment.", s: "upcoming" },
+        { n: 27, t: "Subscriber Q&A - Live", d: "Real questions. Real demos. No scripted answers.", s: "upcoming" },
+        { n: 28, t: "Tools I Stopped Using", d: "Cutting what doesn't work. What replaced it and why.", s: "upcoming" },
+        { n: 29, t: "Day 29 - Final Push", d: "Everything I've learned. The full picture.", s: "upcoming" },
+        { n: 30, t: "THE FINAL RESULT", d: "Did I hit 10K? Full breakdown. What comes next.", s: "upcoming" },
+      ];
+      renderSchedule(DAYS);
+    }
+
+    // Initialize
+    loadSchedule();
+
 
     // Scroll reveal
     const obs = new IntersectionObserver(entries => {
